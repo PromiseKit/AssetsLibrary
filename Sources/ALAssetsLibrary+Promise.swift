@@ -28,7 +28,7 @@ extension UIViewController {
         return proxy.promise.then(on: nil) { info -> Promise<NSData> in
             let url = info[UIImagePickerControllerReferenceURL] as! URL
             
-            return Promise(.pending) { seal in
+            return Promise { seal in
                 ALAssetsLibrary().asset(for: url, resultBlock: { asset in
                     let N = Int(asset!.defaultRepresentation().size())
                     let bytes = UnsafeMutablePointer<UInt8>.allocate(capacity: N)
