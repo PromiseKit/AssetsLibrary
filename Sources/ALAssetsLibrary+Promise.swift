@@ -26,7 +26,11 @@ extension UIViewController {
         present(vc, animated: animated, completion: completion)
 
         return proxy.promise.then(on: nil) { info -> Promise<NSData> in
+        #if swift(>=4.2)
+            let url = info[.referenceURL] as! URL
+        #else
             let url = info[UIImagePickerControllerReferenceURL] as! URL
+        #endif
             
             return Promise { seal in
                 ALAssetsLibrary().asset(for: url, resultBlock: { asset in
@@ -49,7 +53,11 @@ extension UIViewController {
 }
 
 @objc private class UIImagePickerControllerProxy: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+#if swift(>=4.2)
+    let (promise, seal) = Promise<[UIImagePickerController.InfoKey: Any]>.pending()
+#else
     let (promise, seal) = Promise<[String: Any]>.pending()
+#endif
     var retainCycle: AnyObject?
 
     required override init() {
@@ -57,10 +65,17 @@ extension UIViewController {
         retainCycle = self
     }
 
-    fileprivate func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+#if swift(>=4.2)
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
         seal.fulfill(info)
         retainCycle = nil
     }
+#else
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        seal.fulfill(info)
+        retainCycle = nil
+    }
+#endif
 
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         seal.reject(UIImagePickerController.PMKError.cancelled)
